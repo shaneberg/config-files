@@ -67,13 +67,47 @@ end
 vim.api.nvim_create_user_command('TrimWhitespace', trim_trailing_whitespace, {})
 vim.api.nvim_set_keymap('n', '<leader>t', ':TrimWhitespace<CR>', { noremap = true, silent = true })
 
+-- Map <leader>y to copy full path of current file to clipboard
+vim.api.nvim_set_keymap('n', '<leader>y', ':let @+ = expand("%:p")<CR>', { noremap = true, silent = true })
+
 -- Remove Highlights
 vim.api.nvim_set_keymap('n', '<leader><space>', ":noh<CR>", { noremap = true, silent = true })
 
 -- Y should work like yy
 vim.api.nvim_set_keymap('n', 'Y', 'yy', { noremap = true, silent = true })
 
--- Lazy bootstrap
+-- Neovide-specific settings
+if vim.g.neovide then
+    vim.g.neovide_cursor_vfx_mode = "wireframe"
+    vim.api.nvim_set_keymap('n', '<F11>', ":lua vim.g.neovide_fullscreen = not vim.g.neovide_fullscreen<CR>", { noremap = true, silent = true })
+end
+
+-- GUI-specific settings
+if vim.fn.has("gui_running") == 1 then
+    function adjust_font_size(delta)
+        local guifont = table.concat(vim.opt.guifont:get(), ",")
+        local size = guifont:match('h(%d+)')
+        if size then
+            size = tonumber(size) + delta
+            vim.opt.guifont = guifont:gsub('h%d+', 'h' .. size)
+        end
+    end
+
+    vim.api.nvim_set_keymap('n', '<C-=>', ":lua adjust_font_size(1)<CR>", { noremap = true, silent = true })
+    vim.api.nvim_set_keymap('n', '<C-->', ":lua adjust_font_size(-1)<CR>", { noremap = true, silent = true })
+
+    vim.opt.guifont = "Cascadia Code:h14:cANSI"
+
+    vim.opt.guicursor = {
+        "n-v-c:block-Cursor",                  -- Normal, Visual, Command-line: block
+        "i-ci-ve:ver25-Cursor",                -- Insert, Command-line Insert, Visual: vertical bar cursor 25% width
+        "r-cr:hor20-Cursor",                   -- Replace, Command-line Replace: horizontal bar cursor 20% height
+        "o:hor50",                             -- Operator-pending: horizontal bar cursor 50% height
+        "a:blinkwait700-blinkoff400-blinkon250-Cursor"
+    }
+end
+
+-- Package Management
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
     vim.fn.system({
@@ -81,13 +115,12 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
         "clone",
         "--filter=blob:none",
         "https://github.com/folke/lazy.nvim.git",
-        "--branch=stable", -- latest stable release
+        "--branch=stable",
         lazypath,
     })
 end
 vim.opt.rtp:prepend(lazypath)
 
--- Plugins
 require("lazy").setup({
     { "nvim-lua/plenary.nvim" },
     {
@@ -109,29 +142,31 @@ require("lazy").setup({
     },
     {
         "nvim-tree/nvim-tree.lua",
-        requires = { "nvim-tree/nvim-web-devicons" },
         config = function()
             vim.api.nvim_set_keymap('n', '<leader>e', ':NvimTreeToggle<CR>', { noremap = true, silent = true })
-            require("nvim-tree").setup()
-        end
-    },
-    {
-        "nvim-treesitter/nvim-treesitter",
-        run = ":TSUpdate",
-        config = function()
-            require('nvim-treesitter.configs').setup({
-                ensure_installed = {"python", "lua", "c", "c_sharp", "javascript", "java"},
-                highlight = {
-                    enable = true
-                },
-                indent = {
+            require("nvim-tree").setup({
+                update_focused_file = {
                     enable = true
                 }
             })
         end
     },
     {
-        "cocopon/iceberg.vim", -- Adding Iceberg colorscheme
+        "nvim-treesitter/nvim-treesitter",
+        config = function()
+            require('nvim-treesitter.configs').setup({
+                ensure_installed = {"python", "lua", "c", "c_sharp", "javascript", "java", "markdown"},
+                highlight = {
+                    enable = true
+                },
+                indent = {
+                    enable = true
+                },
+            })
+        end
+    },
+    {
+        "cocopon/iceberg.vim",
         config = function()
             vim.cmd.colorscheme("iceberg")
         end
