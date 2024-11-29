@@ -26,6 +26,8 @@ vim.opt.textwidth = 80
 vim.opt.number = true
 vim.o.list = true
 
+vim.opt.signcolumn = "yes"
+
 -- Ensure the shada file is saved on exit and loaded on start
 vim.opt.shadafile = vim.fn.stdpath('data') .. '/shada/main.shada'
 vim.opt.shada = "'100,<50,s10,h"
@@ -126,6 +128,7 @@ require("lazy").setup({
     "neovim/nvim-lspconfig",
     config = function()
       local lspconfig = require("lspconfig")
+      local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
       -- ts_ls setup for TypeScript/JavaScript
       lspconfig.ts_ls.setup({
@@ -133,7 +136,6 @@ require("lazy").setup({
           -- Disable ts_ls formatting (use Prettier/null-ls instead)
           client.server_capabilities.documentFormattingProvider = false
 
-          -- Key mappings for LSP functionality
           local opts = { noremap = true, silent = true, buffer = bufnr }
           vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
           vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
@@ -143,7 +145,22 @@ require("lazy").setup({
           vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
           vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
         end,
+        capabilities = capabilities,
         flags = { debounce_text_changes = 150 },
+      })
+    end,
+  },
+  {
+    "jose-elias-alvarez/null-ls.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    config = function()
+      local null_ls = require("null-ls")
+      null_ls.setup({
+        sources = {
+          null_ls.builtins.formatting.prettier.with({
+            filetypes = { "javascript", "typescript", "html", "css", "json" },
+          }),
+        },
       })
     end,
   },
@@ -161,15 +178,42 @@ require("lazy").setup({
     end,
   },
   {
+    "hrsh7th/nvim-cmp", -- Autocomplete engine
+    dependencies = {
+      "hrsh7th/cmp-nvim-lsp", -- Integration with LSP
+      "hrsh7th/cmp-buffer", -- Buffer completions
+      "hrsh7th/cmp-path", -- Path completions
+      "hrsh7th/vim-vsnip", -- Snippet engine
+      "hrsh7th/cmp-vsnip", -- Snippet completions
+    },
+    config = function()
+      local cmp = require("cmp")
+      cmp.setup({
+        snippet = {
+          expand = function(args)
+            vim.fn["vsnip#anonymous"](args.body)
+          end,
+        },
+        mapping = {
+          ["<C-Space>"] = cmp.mapping.complete(),
+          ["<CR>"] = cmp.mapping.confirm({ select = true }),
+          ["<Tab>"] = cmp.mapping.select_next_item(),
+          ["<S-Tab>"] = cmp.mapping.select_prev_item(),
+        },
+        sources = {
+          { name = "nvim_lsp" }, -- LSP-based completions
+          { name = "buffer" }, -- Buffer-based completions
+          { name = "path" }, -- File path completions
+        },
+      })
+    end,
+  },
+  {
     "mfussenegger/nvim-dap",
     dependencies = {
-      -- Optional UI for nvim-dap
       "rcarriga/nvim-dap-ui",
-      -- JavaScript/TypeScript adapter for nvim-dap
       "mxsdev/nvim-dap-vscode-js",
-      -- Telescope integration
       "nvim-telescope/telescope-dap.nvim",
-      -- Dependency for dap-ui
       "nvim-neotest/nvim-nio",
     },
     config = function()
@@ -289,15 +333,43 @@ require("lazy").setup({
     "nvim-treesitter/nvim-treesitter",
     config = function()
       require('nvim-treesitter.configs').setup({
-        ensure_installed = {"python", "lua", "c", "c_sharp", "javascript", "java", "markdown", "typescript"},
+        ensure_installed = {
+          "python",
+          "lua",
+          "c",
+          "c_sharp",
+          "javascript",
+          "java",
+          "markdown",
+          "typescript",
+          "tsx",
+          "html",
+          "css"
+        },
         highlight = {
-          enable = true
+          enable = true,
         },
         indent = {
-          enable = true
+          enable = true,
         },
       })
     end
+  },
+  {
+    "kosayoda/nvim-lightbulb",
+    config = function()
+      require("nvim-lightbulb").setup({
+        autocmd = { enabled = true },
+        sign = {
+          enabled = false,
+          priority = 10,
+        },
+        virtual_text = {
+          enabled = true,
+          text = "❯",
+        },
+      })
+    end,
   },
   {
     "cocopon/iceberg.vim",
