@@ -158,10 +158,12 @@ require("lazy").setup({
       null_ls.setup({
         sources = {
           null_ls.builtins.formatting.prettier.with({
-            filetypes = { "javascript", "typescript", "html", "css", "json" },
+            filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact", "json", "yaml", "html", "css", "scss", "markdown" },
           }),
         },
       })
+
+      vim.api.nvim_set_keymap("n", "<leader>p", ":lua vim.lsp.buf.format({ async = true })<CR>", { noremap = true, silent = true })
     end,
   },
   {
@@ -285,7 +287,9 @@ require("lazy").setup({
             type = "pwa-node",
             request = "attach",
             name = "Attach to Node.js",
-            processId = require("dap.utils").pick_process,
+            processId = function()
+              return vim.fn.input("Enter PID: ") -- Prompt user for the PID
+            end,
             cwd = "${workspaceFolder}",
           },
         }
@@ -302,7 +306,7 @@ require("lazy").setup({
       vim.api.nvim_set_keymap("n", "<leader>du", ":lua require('dapui').toggle()<CR>", { noremap = true, silent = true })
       vim.api.nvim_set_keymap("n", "<leader>b", ":lua require'dap'.toggle_breakpoint()<CR>", opts) -- Toggle Breakpoint
       vim.api.nvim_set_keymap("n", "<leader>B", ":lua require'dap'.set_breakpoint(vim.fn.input('Breakpoint condition: '))<CR>", opts) -- Conditional Breakpoint
-      vim.api.nvim_set_keymap("n", "<leader>dr", ":lua require'dap'.repl.open()<CR>", opts) -- Open REPL
+      vim.api.nvim_set_keymap("n", "<leader>dr", ":lua require'dap'.repl.open()<CR>", opts)
 
       -- Telescope Integration for DAP
       require("telescope").load_extension("dap")
