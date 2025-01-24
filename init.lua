@@ -20,8 +20,8 @@ vim.opt.incsearch = true
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
 
-vim.opt.colorcolumn = '81'
-vim.opt.textwidth = 80
+vim.opt.colorcolumn = '101'
+vim.opt.textwidth = 100
 
 vim.opt.number = true
 vim.o.list = true
@@ -123,6 +123,58 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
+  {
+    "lewis6991/gitsigns.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    config = function()
+
+      -- Configure highlights explicitly
+      vim.api.nvim_set_hl(0, "GitSignsAdd", { link = "DiffAdd" })         -- Additions
+      vim.api.nvim_set_hl(0, "GitSignsChange", { link = "DiffChange" })   -- Modifications
+      vim.api.nvim_set_hl(0, "GitSignsDelete", { link = "DiffDelete" })   -- Deletions
+      vim.api.nvim_set_hl(0, "GitSignsTopdelete", { link = "DiffDelete" })
+      vim.api.nvim_set_hl(0, "GitSignsChangedelete", { link = "DiffChange" })
+
+      require("gitsigns").setup({
+        signs = {
+          add          = { text = '→' },
+          change       = { text = '~' },
+          delete       = { text = '←' },
+          topdelete    = { text = '⇦' },
+          changedelete = { text = '⇆'  },
+          untracked    = { text = '?' }
+        },
+        base = "develop",
+        signcolumn = true,
+        numhl = false,
+        linehl = false,
+        watch_gitdir = {
+          interval = 1000,
+          follow_files = true,
+        },
+        update_debounce = 200,
+        max_file_length = 40000, -- Disable for large files
+      })
+
+      vim.api.nvim_set_keymap('n', '<leader>gb', '', {
+        noremap = true,
+        silent = true,
+        callback = function()
+          local base = vim.fn.input("Set Gitsigns base: ", "develop")
+          if vim.fn.system("git rev-parse --verify " .. base) ~= "" then
+            require("gitsigns").setup({ base = base })
+            print("Gitsigns base set to: " .. base)
+          else
+            print("Invalid base branch! Falling back to develop.")
+            require("gitsigns").setup({ base = "develop" })
+          end
+        end,
+      })
+
+      vim.api.nvim_set_keymap('n', ']c', ":Gitsigns next_hunk<CR>", { noremap = true, silent = true })
+      vim.api.nvim_set_keymap('n', '[c', ":Gitsigns prev_hunk<CR>", { noremap = true, silent = true })
+    end,
+  },
   { "nvim-lua/plenary.nvim" },
   {
     "neovim/nvim-lspconfig",
@@ -158,12 +210,11 @@ require("lazy").setup({
       null_ls.setup({
         sources = {
           null_ls.builtins.formatting.prettier.with({
-            filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact", "json", "yaml", "html", "css", "scss", "markdown" },
+            filetypes = { "javascript", "typescript", "javascriptreact", "typescriptreact", "html", "css", "json", "markdown", "markdown.mdx", "yaml" },
           }),
         },
       })
-
-      vim.api.nvim_set_keymap("n", "<leader>p", ":lua vim.lsp.buf.format({ async = true })<CR>", { noremap = true, silent = true })
+      vim.api.nvim_set_keymap('n', '<leader>p', ':lua vim.lsp.buf.format()<CR>', { noremap = true, silent = true })
     end,
   },
   {
@@ -172,7 +223,7 @@ require("lazy").setup({
     config = function()
       require("telescope").setup({
         defaults = {
-          file_ignore_patterns = { "node_modules", ".git/" },
+          file_ignore_patterns = { "node_modules", ".git/", "build/"},
         }
       })
       vim.api.nvim_set_keymap('n', '<leader>ff', ":Telescope find_files<CR>", { noremap = true, silent = true })
@@ -327,6 +378,9 @@ require("lazy").setup({
     config = function()
       vim.api.nvim_set_keymap('n', '<leader>e', ':NvimTreeToggle<CR>', { noremap = true, silent = true })
       require("nvim-tree").setup({
+        view = {
+          width = 60
+        },
         update_focused_file = {
           enable = true
         }
